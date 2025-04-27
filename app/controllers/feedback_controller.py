@@ -1,68 +1,123 @@
 from flask import Blueprint, request, jsonify
 from app.services.feedback_service import FeedbackService
+from app.models.leaderboard import Leaderboard
+from app import db
 
 feedback_bp = Blueprint('feedback', __name__)
 
 @feedback_bp.route('/feedback', methods=['POST'])
 def add_feedback():
     """
-    Endpoint to add user feedback (upvote/downvote)
+    Endpoint to add user feedback with ratings
     
     Expects JSON data in the format:
     {
-        "evaluation_id": 1,
-        "model_name": "ChatGPT",
-        "vote_type": "upvote"  # or "downvote"
+        "feedback": {
+            "ChatGPT": 3,
+            "Gemini": 4,
+            "Llama": 3
+        },
+        "scores": {
+            "ChatGPT": { ... metrics ... },
+            "Gemini": { ... metrics ... },
+            "Llama": { ... metrics ... }
+        }
     }
     """
     try:
         data = request.json
         
         # Validate input
-        if not data or 'evaluation_id' not in data or 'model_name' not in data or 'vote_type' not in data:
-            return jsonify({'error': 'Invalid input. Requires evaluation_id, model_name, and vote_type.'}), 400
+        if not data or 'feedback' not in data:
+            return jsonify({'error': 'Invalid input. Requires feedback ratings.'}), 400
         
-        # Get input data
-        evaluation_id = data['evaluation_id']
-        model_name = data['model_name']
-        vote_type = data['vote_type']
+        feedback = data['feedback']
         
-        # Validate vote type
-        if vote_type not in ['upvote', 'downvote']:
-            return jsonify({'error': 'Invalid vote_type. Must be "upvote" or "downvote".'}), 400
+        # Update ratings for each model
+        for model_name, rating in feedback.items():
+            # Validate rating (should be 1-5)
+            if not isinstance(rating, (int, float)) or rating < 1 or rating > 5:
+                return jsonify({'error': f'Invalid rating for {model_name}. Must be between 1 and 5.'}), 400
+            
+            # Get the model from leaderboard
+            model = Leaderboard.query.filter_by(model_name=model_name).first()
+            if not model:
+                # Create a new model entry if it doesn't exist
+                model = Leaderboard(model_name=model_name)
+                db.session.add(model)
+            
+            # Update the rating
+            model.update_user_rating(rating)
         
-        # Save feedback
-        feedback = FeedbackService.save_feedback(evaluation_id, model_name, vote_type)
+        db.session.commit()
+        
+        # Calculate and return ranking
+        ranks = calculate_model_ranking()
         
         return jsonify({
-            'message': f'Feedback ({vote_type}) saved for {model_name}',
-            'feedback_id': feedback.id
-        }), 201
-        
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 400
+            'message': 'Feedback saved successfully',
+            'ranking': ranks
+        }), 200
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@feedback_bp.route('/feedback/stats', methods=['GET'])
-def get_feedback_stats():
+@feedback_bp.route('/ranking', methods=['GET'])
+def get_ranking():
     """
-    Endpoint to get feedback statistics
-    
-    Optional query parameters:
-    - evaluation_id: Filter by evaluation ID
-    - model_name: Filter by model name
+    Endpoint to get current model ranking based on metrics and user feedback
     """
     try:
-        # Get query parameters
-        evaluation_id = request.args.get('evaluation_id', type=int)
-        model_name = request.args.get('model_name')
+        # Calculate and return ranking
+        ranks = calculate_model_ranking()
         
-        # Get feedback stats
-        stats = FeedbackService.get_feedback_stats(evaluation_id, model_name)
-        
-        return jsonify(stats), 200
+        return jsonify(ranks), 200
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500 
+        return jsonify({'error': str(e)}), 500
+
+def calculate_model_ranking():
+    """
+    Calculate model ranking based on metrics and user feedback
+    
+    Returns:
+        List of models with their rank and scores
+    """
+    # Get all models from leaderboard
+    models = Leaderboard.query.all()
+    
+    # Calculate combined score for each model
+    ranking_data = []
+    for model in models:
+        # Skip models with no evaluations
+        if model.total_evaluations == 0:
+            continue
+            
+        # Calculate combined score (50% metrics, 50% user feedback)
+        nlp_score = model.avg_final_score
+        
+        # If no user feedback yet, use only NLP score
+        if model.feedback_count == 0:
+            combined_score = nlp_score
+        else:
+            # Normalize user rating to 0-1 range (from 1-5)
+            user_score = (model.user_rating - 1) / 4
+            combined_score = 0.5 * nlp_score + 0.5 * user_score
+        
+        ranking_data.append({
+            'model': model.model_name,
+            'combined_score': round(combined_score, 2),
+            'nlp_score': round(nlp_score, 2),
+            'user_rating': model.user_rating if model.feedback_count > 0 else None,
+            'feedback_count': model.feedback_count,
+            'evaluation_count': model.total_evaluations
+        })
+    
+    # Sort by combined score (descending)
+    ranking_data.sort(key=lambda x: x['combined_score'], reverse=True)
+    
+    # Add ranks
+    for i, item in enumerate(ranking_data):
+        item['rank'] = i + 1
+    
+    return ranking_data 

@@ -1,18 +1,16 @@
 # LLM Response Evaluator API
 
-A Flask API for evaluating responses from different Large Language Models (LLMs) based on mathematical and logical reasoning accuracy.
+A Flask API for evaluating responses from different Large Language Models (LLMs) using NLP metrics.
 
 ## Features
 
 - Evaluates responses from ChatGPT, Gemini, and Llama
 - Accepts real-time user input and pre-provided LLM responses
-- Preprocesses and normalizes mathematical/logical responses
-- Evaluates responses using multiple metrics, including RAGAS
+- Evaluates responses using NLP metrics (coherence, token overlap, length ratio)
 - Stores results in a PostgreSQL database
 - Maintains a leaderboard ranking LLMs based on performance
-- Allows user feedback (upvote/downvote)
-- Visualizes model performance over time
-- Supports voice input via speech recognition
+- Allows user feedback (ratings from 1-5)
+- Calculates model rankings based on metrics and user feedback
 
 ## Installation
 
@@ -55,42 +53,54 @@ python app.py
 
 ### Evaluation
 
-- `POST /api/evaluate`: Evaluate LLM responses
+- `POST /api/evaluate`: Evaluate LLM responses and save to database
   - Input:
     ```json
     {
-      "question": "What is 5 + 3 * 2?",
+      "question": "What is the capital of France?",
       "responses": {
-        "ChatGPT": "11",
-        "Gemini": "10",
-        "Llama": "16"
+        "ChatGPT": "The capital of France is Paris.",
+        "Gemini": "Paris is the capital city of France.",
+        "Llama": "France's capital is Paris."
       }
     }
     ```
 
-- `POST /api/evaluate/audio`: Evaluate LLM responses using audio input
-  - Multipart form data with:
-    - `audio`: Audio file containing the spoken question
-    - `responses`: JSON string of model responses
+- `POST /api/evaluate/metrics`: Evaluate LLM responses without saving to database
+  - Input:
+    ```json
+    {
+      "question": "What is the capital of France?",
+      "responses": {
+        "ChatGPT": "The capital of France is Paris.",
+        "Gemini": "Paris is the capital city of France.",
+        "Llama": "France's capital is Paris."
+      }
+    }
+    ```
 
 - `GET /api/evaluation/{id}`: Get a specific evaluation by ID
 
 ### Feedback
 
-- `POST /api/feedback`: Add user feedback (upvote/downvote)
+- `POST /api/feedback`: Add user feedback with ratings
   - Input:
     ```json
     {
-      "evaluation_id": 1,
-      "model_name": "ChatGPT",
-      "vote_type": "upvote"  // or "downvote"
+      "feedback": {
+        "ChatGPT": 4,
+        "Gemini": 5,
+        "Llama": 3
+      },
+      "scores": {
+        "ChatGPT": { ... metrics ... },
+        "Gemini": { ... metrics ... },
+        "Llama": { ... metrics ... }
+      }
     }
     ```
 
-- `GET /api/feedback/stats`: Get feedback statistics
-  - Optional query parameters:
-    - `evaluation_id`: Filter by evaluation ID
-    - `model_name`: Filter by model name
+- `GET /api/ranking`: Get the current model ranking based on metrics and user feedback
 
 ### Leaderboard
 
@@ -100,42 +110,65 @@ python app.py
 
 - `GET /api/leaderboard/model/{model_name}`: Get detailed metrics for a specific model
 
-- `GET /api/leaderboard/trend`: Get visualization of model performance trends
-  - Optional query parameters:
-    - `models`: Comma-separated list of model names
-    - `metric`: The metric to visualize (default: final_score)
-
-- `GET /api/leaderboard/radar`: Get radar chart comparison of models
-  - Optional query parameters:
-    - `models`: Comma-separated list of model names
-
 ## Example Response
 
+### Evaluation Response
 ```json
 {
-  "question": "What is 5 + 3 * 2?",
+  "question": "What is the capital of France?",
   "evaluation": {
     "ChatGPT": {
-      "coherence": 0.95,
-      "relevance": 0.9,
-      "math_validity": 1.0,
-      "logical_consistency": 0.95,
-      "final_score": 0.95
+      "coherence": 0.85,
+      "token_overlap": 0.6,
+      "length_ratio": 0.7,
+      "overall_score": 0.75
     },
     "Gemini": {
       "coherence": 0.9,
-      "relevance": 0.85,
-      "math_validity": 0.5,
-      "logical_consistency": 0.7,
-      "final_score": 0.74
+      "token_overlap": 0.7,
+      "length_ratio": 0.9,
+      "overall_score": 0.85
     }
   },
   "leaderboard": [
-    {"model": "ChatGPT", "avg_score": 0.95},
-    {"model": "Gemini", "avg_score": 0.74},
-    {"model": "Llama", "avg_score": 0.6}
+    {"model": "Gemini", "avg_score": 0.85},
+    {"model": "ChatGPT", "avg_score": 0.75},
+    {"model": "Llama", "avg_score": 0.65}
   ]
 }
+```
+
+### Ranking Response
+```json
+[
+  {
+    "model": "Gemini",
+    "combined_score": 0.88,
+    "nlp_score": 0.85,
+    "user_rating": 4.8,
+    "feedback_count": 5,
+    "evaluation_count": 10,
+    "rank": 1
+  },
+  {
+    "model": "ChatGPT",
+    "combined_score": 0.76,
+    "nlp_score": 0.75,
+    "user_rating": 4.2,
+    "feedback_count": 5,
+    "evaluation_count": 10,
+    "rank": 2
+  },
+  {
+    "model": "Llama",
+    "combined_score": 0.63,
+    "nlp_score": 0.65,
+    "user_rating": 3.5,
+    "feedback_count": 5,
+    "evaluation_count": 10,
+    "rank": 3
+  }
+]
 ```
 
 ## Technologies Used
@@ -143,9 +176,7 @@ python app.py
 - Flask (API framework)
 - SQLAlchemy (ORM for database)
 - PostgreSQL (database)
-- RAGAS (LLM response evaluation)
-- SymPy (mathematical parsing)
 - NLTK (text processing)
 - Sentence Transformers (semantic similarity)
-- SpeechRecognition (voice input)
+- NumPy (numerical calculations)
 - Matplotlib (visualization) 
