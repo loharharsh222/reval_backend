@@ -30,6 +30,7 @@ class EvaluationService:
             
             # Store results
             evaluation_results[model_name] = metrics
+            print(f"Evaluation for {model_name}: {metrics}")
         
         return evaluation_results
     
