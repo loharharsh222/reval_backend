@@ -1,4 +1,13 @@
-# filepath: c:\Users\Ahmad\Desktop\Desktop\BE Project\reval_backend\app\services\evaluation_service.py
+"""
+Fix script to repair the evaluation service file syntax
+"""
+import os
+
+def fix_evaluation_service():
+    """Fix syntax issues in the evaluation service file"""
+    
+    # Load the fixed content
+    fixed_content = '''# filepath: c:\\Users\\Ahmad\\Desktop\\Desktop\\BE Project\\reval_backend\\app\\services\\evaluation_service.py
 from app.utils.nlp_evaluator import NLPEvaluator
 from app.models.evaluation import Evaluation
 from app.models.leaderboard import Leaderboard
@@ -22,7 +31,7 @@ class EvaluationService:
         """
         evaluation_results = {}
         
-        print("\n" + "="*80)
+        print("\\n" + "="*80)
         print(f"DEBUG: Evaluating responses for question: '{question}'")
         print("="*80)
         
@@ -33,7 +42,7 @@ class EvaluationService:
                 print(f"DEBUG: Skipping {model_name} - Empty response")
                 continue
             
-            print(f"\nDEBUG: Evaluating {model_name} response:")
+            print(f"\\nDEBUG: Evaluating {model_name} response:")
             print(f"Response: '{response_text[:100]}{'...' if len(response_text) > 100 else ''}'")
             print(f"Response type: {type(response_text)}, ID: {id(response_text)}")
                 
@@ -47,12 +56,12 @@ class EvaluationService:
             # Store results
             evaluation_results[model_name] = metrics
         
-        print("\nDEBUG: Final evaluation results:")
+        print("\\nDEBUG: Final evaluation results:")
         pprint.pprint(evaluation_results)
         
         # Check for identical metrics across models
         if len(evaluation_results) > 1:
-            print("\nDEBUG: Checking for identical metrics across models...")
+            print("\\nDEBUG: Checking for identical metrics across models...")
             
             # Collect all coherence scores
             coherence_scores = [metrics['coherence'] for metrics in evaluation_results.values()]
@@ -70,7 +79,7 @@ class EvaluationService:
             if len(set(overall_scores)) == 1:
                 print(f"WARNING: All overall scores are identical: {overall_scores[0]}")
                 
-        print("="*80 + "\n")
+        print("="*80 + "\\n")
         
         return evaluation_results
     
@@ -87,7 +96,7 @@ class EvaluationService:
         Returns:
             Created evaluation record
         """
-        print("\n" + "="*80)
+        print("\\n" + "="*80)
         print("DEBUG: Saving evaluation to database")
         print(f"Question: '{question}'")
         print("Models evaluated:", list(responses.keys()))
@@ -117,7 +126,7 @@ class EvaluationService:
         
         db.session.commit()
         print("DEBUG: Database transaction committed")
-        print("="*80 + "\n")
+        print("="*80 + "\\n")
         
         return evaluation
     
@@ -157,4 +166,16 @@ class EvaluationService:
             'question': question,
             'evaluation': evaluation_results,
             'leaderboard': leaderboard
-        }
+        }'''
+    
+    # Get the file path
+    file_path = os.path.join("app", "services", "evaluation_service.py")
+    
+    # Write the fixed content to the file
+    with open(file_path, 'w') as file:
+        file.write(fixed_content)
+    
+    print(f"Fixed evaluation service file: {file_path}")
+
+if __name__ == "__main__":
+    fix_evaluation_service()

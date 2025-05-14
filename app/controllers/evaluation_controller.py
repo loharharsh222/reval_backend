@@ -19,7 +19,7 @@ def evaluate():
             "Llama": "16"
         }
     }
-    """
+    """    
     try:
         data = request.json
         
@@ -29,6 +29,38 @@ def evaluate():
         
         question = data['question']
         responses = data['responses']
+        
+        # Debug input data
+        print("\n" + "*"*80)
+        print("DEBUG - API INPUT DATA:")
+        print(f"Question: {question}")
+        print("Responses:")
+        
+        # Validate and sanitize responses
+        invalid_responses = []
+        for model, resp in responses.items():
+            print(f"- {model}: '{resp[:50]}{'...' if len(resp) > 50 else ''}'")
+            
+            # Check for [object Object] or [object Response] patterns
+            if isinstance(resp, str) and (resp.strip() == '[object Object]' or 
+                                         resp.strip() == '[object Response]' or
+                                         resp.startswith('[object ')):
+                invalid_responses.append(model)
+        
+        # Return error if invalid responses detected
+        if invalid_responses:
+            error_msg = f"Invalid response format detected for models: {', '.join(invalid_responses)}. Frontend is sending object references instead of text content."
+            print(f"ERROR: {error_msg}")
+            return jsonify({
+                'error': error_msg,
+                'help': "Make sure to extract the text content from response objects before sending."
+            }), 400
+            
+        # Check if any responses are identical
+        unique_responses = set(responses.values())
+        if len(unique_responses) < len(responses):
+            print("WARNING: Some model responses are identical!")
+        print("*"*80 + "\n")
         
         # Evaluate and save
         result = EvaluationService.evaluate_and_save(question, responses)
@@ -55,13 +87,26 @@ def evaluate_metrics_only():
     """
     try:
         data = request.json
-        
-        # Validate input
+          # Validate input
         if not data or 'question' not in data or 'responses' not in data:
             return jsonify({'error': 'Invalid input. Requires question and responses.'}), 400
         
         question = data['question']
         responses = data['responses']
+        
+        # Debug input data
+        print("\n" + "*"*80)
+        print("DEBUG - API METRICS INPUT DATA:")
+        print(f"Question: {question}")
+        print("Responses:")
+        for model, resp in responses.items():
+            print(f"- {model}: '{resp[:50]}{'...' if len(resp) > 50 else ''}'")
+            
+        # Check if any responses are identical
+        unique_responses = set(responses.values())
+        if len(unique_responses) < len(responses):
+            print("WARNING: Some model responses are identical!")
+        print("*"*80 + "\n")
         
         # Evaluate metrics for each response
         evaluation_results = {}
