@@ -1,4 +1,6 @@
-# NLP Evaluator - Fixed version
+# Simple fix for nlp_evaluator.py
+with open('app/utils/nlp_evaluator.py', 'w', encoding='utf-8') as f:
+    f.write('''# NLP Evaluator - Fixed version
 import nltk
 from nltk.translate.bleu_score import sentence_bleu
 from nltk.tokenize import word_tokenize, sent_tokenize
@@ -27,7 +29,7 @@ class NLPEvaluator:
             return []
             
         text = str(text).lower()
-        text = re.sub(r'[^\w\s]', '', text)
+        text = re.sub(r'[^\\w\\s]', '', text)
         tokens = word_tokenize(text)
         
         if use_stemming:
@@ -206,3 +208,6 @@ class NLPEvaluator:
         print(f"[Eval {eval_id}] Score: {metrics['overall_score']}")
         
         return metrics
+''')
+
+print("✅ Fixed nlp_evaluator.py")

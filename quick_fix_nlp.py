@@ -1,4 +1,13 @@
-# NLP Evaluator - Fixed version
+#!/usr/bin/env python
+"""
+Simple script to fix the NLP evaluator
+"""
+
+def fix_nlp_evaluator():
+    """Fix the NLP evaluator by writing a corrected version"""
+    
+    # Simplified corrected version
+    file_content = """# NLP Evaluator - Fixed version
 import nltk
 from nltk.translate.bleu_score import sentence_bleu
 from nltk.tokenize import word_tokenize, sent_tokenize
@@ -21,13 +30,13 @@ except LookupError:
 class NLPEvaluator:
     @staticmethod
     def preprocess_text(text, use_stemming=True):
-        # Process text by removing punctuation, lowercasing, and stemming
+        """Process text by removing punctuation, lowercasing, and stemming"""
         if not text:
             print("DEBUG [Preprocess]: Empty text")
             return []
             
         text = str(text).lower()
-        text = re.sub(r'[^\w\s]', '', text)
+        text = re.sub(r'[^\\w\\s]', '', text)
         tokens = word_tokenize(text)
         
         if use_stemming:
@@ -38,7 +47,7 @@ class NLPEvaluator:
         
     @staticmethod
     def calculate_token_overlap(reference, candidate):
-        # Calculate token overlap between reference and candidate
+        """Calculate token overlap between reference and candidate"""
         ref_tokens = set(NLPEvaluator.preprocess_text(reference))
         cand_tokens = set(NLPEvaluator.preprocess_text(candidate))
         
@@ -62,7 +71,7 @@ class NLPEvaluator:
     
     @staticmethod
     def calculate_length_ratio(reference, candidate):
-        # Calculate appropriate length ratio
+        """Calculate appropriate length ratio"""
         ref_tokens = NLPEvaluator.preprocess_text(reference)
         cand_tokens = NLPEvaluator.preprocess_text(candidate)
         
@@ -92,7 +101,7 @@ class NLPEvaluator:
             
     @staticmethod
     def evaluate_coherence(text, question=None):
-        # Evaluate text coherence
+        """Evaluate text coherence"""
         if not text:
             return 0.0
             
@@ -163,7 +172,7 @@ class NLPEvaluator:
         
     @staticmethod
     def evaluate_text(question, response):
-        # Main evaluation function
+        """Main evaluation function"""
         if not question or not response:
             return {'overall_score': 0, 'coherence': 0, 'token_overlap': 0, 'length_ratio': 0}
             
@@ -206,3 +215,14 @@ class NLPEvaluator:
         print(f"[Eval {eval_id}] Score: {metrics['overall_score']}")
         
         return metrics
+"""
+    
+    # Write to file
+    with open('app/utils/nlp_evaluator.py', 'w', encoding='utf-8') as f:
+        f.write(file_content)
+        
+    print("✅ Fixed nlp_evaluator.py")
+
+if __name__ == "__main__":
+    fix_nlp_evaluator()
+    print("Completed.")

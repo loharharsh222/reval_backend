@@ -19,6 +19,7 @@ If you're getting identical evaluation scores for different LLM responses, this 
 
 1. **Added frontend data validation**:
    - API now detects and rejects `[object Object]` and `[object Response]` inputs
+   - Added automatic JSON response extraction (extracts the 'text' field from JSON responses)
    - Added helpful error messages explaining how to fix the issue
 
 2. **Improved NLP metrics**:
@@ -74,6 +75,12 @@ If you're getting identical evaluation scores for different LLM responses, this 
    ```
 
 ## Understanding the Evaluation Metrics
+
+### Special Handling for Short Prompts
+- Short prompts (like "Hi", "Hello") now have specialized evaluation logic
+- Greeting responses to greeting prompts receive boosted scores
+- Brief, concise responses are appropriately rewarded for short prompts
+- Prevents unfair penalization of naturally short responses to simple prompts
 
 ### Coherence Score (40% of overall)
 - How well-structured the text is

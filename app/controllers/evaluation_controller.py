@@ -35,10 +35,13 @@ def evaluate():
         print("DEBUG - API INPUT DATA:")
         print(f"Question: {question}")
         print("Responses:")
-        
-        # Validate and sanitize responses
+          # Validate and sanitize responses
         invalid_responses = []
-        for model, resp in responses.items():
+        
+        # Add JSON parsing for responses
+        import json
+        
+        for model, resp in list(responses.items()):  # Use list to allow dict modification during iteration
             print(f"- {model}: '{resp[:50]}{'...' if len(resp) > 50 else ''}'")
             
             # Check for [object Object] or [object Response] patterns
@@ -46,6 +49,21 @@ def evaluate():
                                          resp.strip() == '[object Response]' or
                                          resp.startswith('[object ')):
                 invalid_responses.append(model)
+                
+            # Try to extract text from JSON responses
+            elif isinstance(resp, str) and (resp.startswith('{') and resp.endswith('}')):
+                try:
+                    json_data = json.loads(resp)
+                    if isinstance(json_data, dict) and 'text' in json_data:
+                        # Extract text field from JSON
+                        extracted_text = json_data['text']
+                        print(f"  INFO: Extracted text from JSON for {model}: '{extracted_text[:50]}{'...' if len(extracted_text) > 50 else ''}'")
+                        responses[model] = extracted_text
+                    elif not json_data:  # Empty JSON object {}
+                        print(f"  WARNING: Empty JSON response from {model}")
+                        responses[model] = "Empty response"
+                except json.JSONDecodeError:
+                    print(f"  WARNING: Failed to parse JSON for {model}, using raw string")
         
         # Return error if invalid responses detected
         if invalid_responses:
@@ -101,6 +119,40 @@ def evaluate_metrics_only():
         print("Responses:")
         for model, resp in responses.items():
             print(f"- {model}: '{resp[:50]}{'...' if len(resp) > 50 else ''}'")
+              # Validate and sanitize responses
+        invalid_responses = []
+        
+        # Add JSON parsing for responses
+        for model, resp in list(responses.items()):  # Use list to allow dict modification during iteration
+            # Check for [object Object] or [object Response] patterns
+            if isinstance(resp, str) and (resp.strip() == '[object Object]' or 
+                                         resp.strip() == '[object Response]' or
+                                         resp.startswith('[object ')):
+                invalid_responses.append(model)
+                
+            # Try to extract text from JSON responses
+            elif isinstance(resp, str) and (resp.startswith('{') and resp.endswith('}')):
+                try:
+                    json_data = json.loads(resp)
+                    if isinstance(json_data, dict) and 'text' in json_data:
+                        # Extract text field from JSON
+                        extracted_text = json_data['text']
+                        print(f"  INFO: Extracted text from JSON for {model}: '{extracted_text[:50]}{'...' if len(extracted_text) > 50 else ''}'")
+                        responses[model] = extracted_text
+                    elif not json_data:  # Empty JSON object {}
+                        print(f"  WARNING: Empty JSON response from {model}")
+                        responses[model] = "Empty response"
+                except json.JSONDecodeError:
+                    print(f"  WARNING: Failed to parse JSON for {model}, using raw string")
+        
+        # Return error if invalid responses detected
+        if invalid_responses:
+            error_msg = f"Invalid response format detected for models: {', '.join(invalid_responses)}. Frontend is sending object references instead of text content."
+            print(f"ERROR: {error_msg}")
+            return jsonify({
+                'error': error_msg,
+                'help': "Make sure to extract the text content from response objects before sending."
+            }), 400
             
         # Check if any responses are identical
         unique_responses = set(responses.values())
