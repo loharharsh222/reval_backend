@@ -43,10 +43,12 @@ def create_app():
     from app.controllers.evaluation_controller import evaluation_bp
     from app.controllers.feedback_controller import feedback_bp
     from app.controllers.leaderboard_controller import leaderboard_bp
+    from app.controllers.user_controller import user_bp
     
     app.register_blueprint(evaluation_bp, url_prefix='/api')
     app.register_blueprint(feedback_bp, url_prefix='/api')
     app.register_blueprint(leaderboard_bp, url_prefix='/api')
+    app.register_blueprint(user_bp, url_prefix='/api')
     
     # Create database tables
     with app.app_context():
