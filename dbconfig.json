@@ -1,0 +1,13 @@
+{
+    "Servers": {
+        "1": {
+            "Name": "REVAL",
+            "Group": "REVAL_TEST",
+            "Host": "pg-9294bca-reval.f.aivencloud.com",
+            "Port": 15096,
+            "MaintenanceDB": "defaultdb",
+            "Username": "avnadmin",
+            "SSLMode": "require"
+        }
+    }
+}
